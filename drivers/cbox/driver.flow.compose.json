@@ -1,0 +1,16 @@
+{
+  "actions" : [
+    {
+      "$extends" : "setTargetFanSpeed"
+    }
+  ],
+  "triggers" : [
+    {
+      "id" : "pellets_attention",
+      "title" : {
+        "en" : "No more pellets",
+        "fr" : "Plus de granulés"
+      }
+    }
+  ]
+}

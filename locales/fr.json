@@ -1,0 +1,5 @@
+{
+  "illegalStateOnOff" : "Etat non compatible avec l'arrêt ou le démarrage du poêle",
+  "illegalRegulationMode" : "Mode non compatible avec l'état du poêle",
+  "manualActionImpossible" : "Action manuelle impossible"
+}

@@ -1,0 +1,5 @@
+{
+  "illegalStateOnOff" : "State not compatible with stopping or starting the stove",
+  "illegalRegulationMode" : "Regulation mode not compatible with the stove state",
+  "manualActionImpossible" : "Manual action impossible"
+}

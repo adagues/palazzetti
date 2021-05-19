@@ -1,0 +1,15 @@
+{
+  "class" : "heater",
+  "capabilities" : [
+    "onoff",
+    "target_temperature",
+    "measure_temperature",
+    "target_power",
+    "target_fan_speed",
+    "stove_regulation"
+  ],
+  "name" : {
+    "en" : "CBox Driver",
+    "fr" : "Driver CBox"
+  }
+}
