@@ -3,3 +3,8 @@
 drivers/.DS_Store
 drivers/cbox/.DS_Store
 drivers/cbox/images/.DS_Store
+
+
+# Added by Homey CLI
+/.homeybuild/
+node_modules
