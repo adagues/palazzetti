@@ -6,7 +6,8 @@
     "measure_temperature",
     "target_power",
     "target_fan_speed",
-    "stove_regulation"
+    "stove_regulation",
+    "locked"
   ],
   "name" : {
     "en" : "CBox Driver",

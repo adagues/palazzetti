@@ -61,22 +61,22 @@ class CboxDriver extends Homey.Driver {
 				}
 		});
 		this.homey.flow.getActionCard('setExternalTemp')
-		.registerRunListener(async (args, state)=> {
-			try{
-				this.log("Application d'une temperature externe");
-				return args.device.setExternalTemp(args.temperature);
-			}catch(error){
-				this.log(error);	
-			}
+			.registerRunListener(async (args, state)=> {
+				try{
+					this.log("Application d'une temperature externe");
+					return args.device.setExternalTemp(args.temperature);
+				}catch(error){
+					this.log(error);	
+				}
 		});
 		this.homey.flow.getActionCard('setSmartPause')
-		.registerRunListener(async (args, state)=> {
-			try{
-				this.log("changement du smartPause");
-				return await args.device.setSmartPause(args.smartPause == 1);
-			}catch(error){
-				this.log(error);	
-			}
+			.registerRunListener(async (args, state)=> {
+				try{
+					this.log("changement du smartPause:"+(args.smartPause==1));
+					return await args.device.setSmartPause(args.smartPause == 1);//1=Activé  2=Désactivé
+				}catch(error){
+					this.log(error);	
+				}
 		});
 		this.homey.flow.getConditionCard('isRegulationInState')
 			.registerRunListener(async (args, state)=> {

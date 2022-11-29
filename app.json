@@ -1,6 +1,6 @@
 {
   "id" : "com.palazzetti",
-  "version" : "1.0.2",
+  "version" : "1.0.3",
   "sdk" : 3,
   "compatibility" : ">=5.0.0",
   "brandColor" : "#75080a",
@@ -20,7 +20,7 @@
   "capabilities" : {
     "target_fan_speed" : {
       "type" : "enum",
-      "setable" : true,
+      "setable" : false,
       "getable" : true,
       "title" : {
         "fr" : "Vitesse de ventillation",
@@ -75,7 +75,7 @@
     "target_power" : {
       "type" : "enum",
       "getable" : true,
-      "setable" : true,
+      "setable" : false,
       "title" : {
         "fr" : "Puissance de Chauffe",
         "en" : "Fire Power"
@@ -183,7 +183,8 @@
             "en" : "FAULTED"
           }
         }
-      ]
+      ],
+      "insights" : true
     },
     "stove_regulation" : {
       "type" : "enum",
@@ -273,7 +274,8 @@
         "stove_state",
         "stove_regulation",
         "external_temperature",
-        "internal_temperature"
+        "internal_temperature",
+        "locked"
       ],
       "pair" : [
         {
@@ -367,14 +369,15 @@
             {
               "id" : "pauseTemp",
               "hint" : {
-                "fr" : "Indique la température qui déclenche la mise en pause de la régulation",
-                "en" : "Indicates the temperature that triggers the pause of the regulation"
+                "fr" : "Indique la différence de température qui déclenche la mise en pause de la régulation",
+                "en" : "Indicates the temperature delta that triggers the pause of the regulation"
               },
               "type" : "number",
-              "value" : 25,
+              "value" : 2,
+              "min" : 1,
               "label" : {
-                "en" : "Température",
-                "fr" : "Temperature"
+                "en" : "Temp. Delta for pause",
+                "fr" : "Delta de Temp. pour Pause"
               },
               "units" : {
                 "fr" : "°",
@@ -382,20 +385,21 @@
               }
             },
             {
-              "id" : "tempDuration",
+              "id" : "restartPauseTemp",
               "hint" : {
-                "fr" : "Indique le durée miminum de la température qui déclenche la mise en pause de la régulation",
-                "en" : "Indicates the minimum duration of the temperature which triggers the pausing of the regulation"
+                "fr" : "Indique la différence de température qui déclenche la remise en chauffe de la régulation",
+                "en" : "Indicates the temperature delta that triggers the burning regulation mode"
               },
               "type" : "number",
-              "value" : 10,
+              "value" : 1,
+              "min" : 0,
               "label" : {
-                "en" : "Duration",
-                "fr" : "Durée"
+                "en" : "Temp. Delta for burning",
+                "fr" : "Delta de Temp. pour reprise"
               },
               "units" : {
-                "fr" : "minutes",
-                "en" : "minutes"
+                "fr" : "°",
+                "en" : "°"
               }
             }
           ]
@@ -421,8 +425,8 @@
                   "value" : 3,
                   "type" : "number",
                   "hint" : {
-                    "fr" : "Puissance du poêle pour le préréglage 0",
-                    "en" : "Stove power for preset 0"
+                    "fr" : "Puissance du poêle pour le préréglage 0 appliqué lorsque la température est inférieur à la température de consigne",
+                    "en" : "Stove power for preset 0 applied when the temperature is lower than the target temperature"
                   },
                   "label" : {
                     "fr" : "Puissance de chauffe",
@@ -436,8 +440,8 @@
                   "value" : 2,
                   "type" : "number",
                   "hint" : {
-                    "fr" : "Vitesse de ventilation du poêle pour le préréglage 0",
-                    "en" : "Stove fan speed for preset 0"
+                    "fr" : "Vitesse de ventilation du poêle pour le préréglage 0 appliqué lorsque la température est inférieur à la température de consigne",
+                    "en" : "Stove fan speed for preset 0 applied when the temperature is lower than the target temperature"
                   },
                   "label" : {
                     "fr" : "Vitesse de ventilation",
@@ -453,6 +457,24 @@
                 "en" : "Preset 1"
               },
               "children" : [
+                {
+                  "id" : "deltaN1",
+                  "hint" : {
+                    "fr" : "Indique la différence de température avec la température de consigne qui déclenche l’application de ce pré-réglage",
+                    "en" : "Indicates the temperature difference with the tagret temperature that triggers the application of this pre-setting"
+                  },
+                  "type" : "number",
+                  "value" : 1,
+                  "min" : 0,
+                  "label" : {
+                    "en" : "Temp. Delta",
+                    "fr" : "Delta de Température"
+                  },
+                  "units" : {
+                    "fr" : "°",
+                    "en" : "°"
+                  }
+                },
                 {
                   "id" : "preset1BurningPower",
                   "min" : 1,
@@ -493,6 +515,24 @@
               },
               "children" : [
                 {
+                  "id" : "deltaN2",
+                  "hint" : {
+                    "fr" : "Indique la différence de température avec la température de consigne qui déclenche l’application de ce pré-réglage",
+                    "en" : "Indicates the temperature difference that triggers the application of this pre-setting"
+                  },
+                  "type" : "number",
+                  "value" : 2,
+                  "min" : 1,
+                  "label" : {
+                    "en" : "Temp. Delta",
+                    "fr" : "Delta de Température"
+                  },
+                  "units" : {
+                    "fr" : "°",
+                    "en" : "°"
+                  }
+                },
+                {
                   "id" : "preset2BurningPower",
                   "min" : 1,
                   "max" : 5,
@@ -523,20 +563,67 @@
                   }
                 }
               ]
+            },
+            {
+              "type" : "group",
+              "label" : {
+                "fr" : "Préréglage Silence",
+                "en" : "Preset Silence"
+              },
+              "children" : [
+                {
+                  "id" : "deltaSilenceEnable",
+                  "hint" : {
+                    "fr" : "Active ou Désactive ce préréglage",
+                    "en" : "Enable or Disable this preset"
+                  },
+                  "type" : "checkbox",
+                  "label" : {
+                    "en" : "Enable",
+                    "fr" : "Activé"
+                  },
+                  "value" : true
+                },
+                {
+                  "id" : "deltaSilence",
+                  "hint" : {
+                    "fr" : "Indique la différence de température avec la température de consigne qui déclenche l’application du mode silence",
+                    "en" : "Indicates the temperature difference that triggers the application of this silence setting"
+                  },
+                  "type" : "number",
+                  "value" : 2,
+                  "min" : 0,
+                  "label" : {
+                    "en" : "Temp. Delta",
+                    "fr" : "Delta de Température"
+                  },
+                  "units" : {
+                    "fr" : "°",
+                    "en" : "°"
+                  }
+                }
+              ]
             }
           ]
         }
       ],
       "capabilitiesOptions" : {
         "target_temperature" : {
-          "min" : 18,
+          "min" : 14,
           "max" : 30,
-          "step" : 1
+          "step" : 0.5
         },
         "onoff" : {
           "title" : {
             "en" : "Stove management",
             "fr" : "Gestion du poêle"
+          },
+          "uiQuickAction" : true
+        },
+        "locked" : {
+          "title" : {
+            "en" : "Burning locked",
+            "fr" : "Allumage bloqué"
           },
           "uiQuickAction" : true
         }
