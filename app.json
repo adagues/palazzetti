@@ -1,6 +1,6 @@
 {
   "id" : "com.palazzetti",
-  "version" : "1.0.3",
+  "version" : "1.1.0",
   "sdk" : 3,
   "compatibility" : ">=5.0.0",
   "brandColor" : "#75080a",
@@ -18,9 +18,20 @@
     "name" : "Pierre Verron"
   },
   "capabilities" : {
+    "stove_connection" : {
+      "type" : "boolean",
+      "getable" : true,
+      "setable" : true,
+      "title" : {
+        "fr" : "Connecté",
+        "en" : "Connected"
+      },
+      "uiComponent" : "sensor",
+      "icon" : "/assets/connected.svg"
+    },
     "target_fan_speed" : {
       "type" : "enum",
-      "setable" : false,
+      "setable" : true,
       "getable" : true,
       "title" : {
         "fr" : "Vitesse de ventillation",
@@ -69,13 +80,27 @@
             "fr" : "5",
             "en" : "5"
           }
+        },
+        {
+          "id" : "6",
+          "title" : {
+            "fr" : "Max",
+            "en" : "Hight"
+          }
+        },
+        {
+          "id" : "7",
+          "title" : {
+            "fr" : "Auto",
+            "en" : "Auto"
+          }
         }
       ]
     },
     "target_power" : {
       "type" : "enum",
       "getable" : true,
-      "setable" : false,
+      "setable" : true,
       "title" : {
         "fr" : "Puissance de Chauffe",
         "en" : "Fire Power"
@@ -254,6 +279,28 @@
       },
       "uiComponent" : "sensor",
       "icon" : "/assets/thermometer.svg"
+    },
+    "stove_ignation" : {
+      "type" : "boolean",
+      "getable" : true,
+      "setable" : true,
+      "title" : {
+        "fr" : "Allumage autorisé",
+        "en" : "Ignition allowed"
+      },
+      "uiComponent" : "button",
+      "icon" : "/assets/block_start.svg"
+    },
+    "auto_mode" : {
+      "type" : "boolean",
+      "getable" : true,
+      "setable" : true,
+      "title" : {
+        "fr" : "Mode Auto",
+        "en" : "Auto Mode"
+      },
+      "uiComponent" : "button",
+      "icon" : "/assets/auto_mode.svg"
     }
   },
   "drivers" : [
@@ -275,7 +322,8 @@
         "stove_regulation",
         "external_temperature",
         "internal_temperature",
-        "locked"
+        "locked",
+        "stove_connection"
       ],
       "pair" : [
         {
@@ -391,8 +439,9 @@
                 "en" : "Indicates the temperature delta that triggers the burning regulation mode"
               },
               "type" : "number",
-              "value" : 1,
-              "min" : 0,
+              "value" : 0,
+              "max" : 1,
+              "min" : -2,
               "label" : {
                 "en" : "Temp. Delta for burning",
                 "fr" : "Delta de Temp. pour reprise"
@@ -436,12 +485,12 @@
                 {
                   "id" : "preset0FanSpeed",
                   "min" : 0,
-                  "max" : 5,
+                  "max" : 7,
                   "value" : 2,
                   "type" : "number",
                   "hint" : {
-                    "fr" : "Vitesse de ventilation du poêle pour le préréglage 0 appliqué lorsque la température est inférieur à la température de consigne",
-                    "en" : "Stove fan speed for preset 0 applied when the temperature is lower than the target temperature"
+                    "fr" : "Vitesse de ventilation du poêle pour le préréglage 0 appliqué lorsque la température est inférieur à la température de consigne\n0= Arrêt\n6= Max\n7= Auto",
+                    "en" : "Stove fan speed for preset 0 applied when the temperature is lower than the target temperature\n0= Stopped\n6= Max\n7= Auto"
                   },
                   "label" : {
                     "fr" : "Vitesse de ventilation",
@@ -493,12 +542,12 @@
                 {
                   "id" : "preset1FanSpeed",
                   "min" : 0,
-                  "max" : 5,
+                  "max" : 7,
                   "value" : 2,
                   "type" : "number",
                   "hint" : {
-                    "fr" : "Vitesse de ventilation du poêle pour le préréglage 1",
-                    "en" : "Stove fan speed for preset 1"
+                    "fr" : "Vitesse de ventilation du poêle pour le préréglage 1\n0= Arrêt\n6= Max\n7= Auto",
+                    "en" : "Stove fan speed for preset 1\n0= Stopped\n6= Max\n7= Auto"
                   },
                   "label" : {
                     "fr" : "Vitesse de ventilation",
@@ -550,12 +599,12 @@
                 {
                   "id" : "preset2FanSpeed",
                   "min" : 0,
-                  "max" : 5,
+                  "max" : 7,
                   "value" : 2,
                   "type" : "number",
                   "hint" : {
-                    "fr" : "Vitesse de ventilation du poêle pour le préréglage 2",
-                    "en" : "Stove fan speed for preset 2"
+                    "fr" : "Vitesse de ventilation du poêle pour le préréglage 2\n0= Arrêt\n6= Max\n7= Auto",
+                    "en" : "Stove fan speed for preset 2\n0= Stopped\n6= Max\n7= Auto"
                   },
                   "label" : {
                     "fr" : "Vitesse de ventilation",
@@ -591,8 +640,8 @@
                     "en" : "Indicates the temperature difference that triggers the application of this silence setting"
                   },
                   "type" : "number",
-                  "value" : 2,
-                  "min" : 0,
+                  "value" : 1,
+                  "min" : 0.25,
                   "label" : {
                     "en" : "Temp. Delta",
                     "fr" : "Delta de Température"
@@ -609,7 +658,7 @@
       ],
       "capabilitiesOptions" : {
         "target_temperature" : {
-          "min" : 14,
+          "min" : 12,
           "max" : 30,
           "step" : 0.5
         },
@@ -882,6 +931,40 @@
             ]
           }
         ]
+      },
+      {
+        "id" : "setIgnationAllowed",
+        "title" : {
+          "fr" : "Gestion de l'autorisation d'allumage",
+          "en" : "Ignation management"
+        },
+        "args" : [
+          {
+            "type" : "device",
+            "name" : "device",
+            "filter" : "driver_id=cbox"
+          },
+          {
+            "type" : "dropdown",
+            "name" : "ignationAllowed",
+            "values" : [
+              {
+                "id" : "1",
+                "title" : {
+                  "fr" : "Allumage autorisé",
+                  "en" : "Ignation allowed"
+                }
+              },
+              {
+                "id" : "0",
+                "title" : {
+                  "fr" : "Allumage interdit",
+                  "en" : "Ignation forbbiden"
+                }
+              }
+            ]
+          }
+        ]
       }
     ],
     "triggers" : [
@@ -967,6 +1050,34 @@
                 }
               }
             ]
+          }
+        ]
+      },
+      {
+        "id" : "isSmartPauseEnabled",
+        "title" : {
+          "fr" : "La pause intelligente !{{est|n'est pas}} activée",
+          "en" : "Smart pause !{{is|is not}} enabled"
+        },
+        "args" : [
+          {
+            "type" : "device",
+            "name" : "device",
+            "filter" : "driver_id=cbox"
+          }
+        ]
+      },
+      {
+        "id" : "isIgnationAllowed",
+        "title" : {
+          "fr" : "L'allumage !{{est|n'est pas}} autorisé",
+          "en" : "Ignation !{{is|is not}} allowed"
+        },
+        "args" : [
+          {
+            "type" : "device",
+            "name" : "device",
+            "filter" : "driver_id=cbox"
           }
         ]
       }

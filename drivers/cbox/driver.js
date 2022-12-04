@@ -78,6 +78,15 @@ class CboxDriver extends Homey.Driver {
 					this.log(error);	
 				}
 		});
+		this.homey.flow.getActionCard('setIgnationAllowed')
+			.registerRunListener(async (args, state)=> {
+				try{
+					this.log("changement de l'autorisation d'allumage:"+(args.ignationAllowed==1));
+					return await args.device.setIgnationAllowed(args.ignationAllowed == 1);//1=Activé  0=Désactivé
+				}catch(error){
+					this.log(error);	
+				}
+		});
 		this.homey.flow.getConditionCard('isRegulationInState')
 			.registerRunListener(async (args, state)=> {
 				try{
@@ -96,6 +105,26 @@ class CboxDriver extends Homey.Driver {
 					this.log(error);	
 				}
 		});
+		this.homey.flow.getConditionCard('isSmartPauseEnabled')
+			.registerRunListener(async (args, state)=> {
+				try{
+					this.log("Demande si Smart Pause Actif:");
+					return await args.device.isSmartPauseEnabled();
+				}catch(error){
+					this.log(error);	
+				}
+		});
+
+		this.homey.flow.getConditionCard('isIgnationAllowed')
+			.registerRunListener(async (args, state)=> {
+				try{
+					this.log("Demande si allumage autorisé:");
+					return await args.device.isIgnationAllowed();
+				}catch(error){
+					this.log(error);	
+				}
+		});
+
 	}
 }
 

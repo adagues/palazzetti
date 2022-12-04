@@ -49,21 +49,33 @@ class CBoxDevice extends Homey.Device {
 		this.registerCapabilityListener('target_fan_speed', this.onCapabilityTargetFanSpeed.bind(this));
 		this.registerCapabilityListener('onoff', this.onCapabilityOnOff.bind(this));
 		this.registerCapabilityListener('stove_regulation', this.onCapabilityRegulationMode.bind(this));
-		//this.addCapability('locked');
-		this.registerCapabilityListener('locked', this.onCapabilityLocked.bind(this));
+		//Mise a jour au besoin
+		if( !this.hasCapability('stove_connection') )
+			this.addCapability('stove_connection');
+
+		if( !this.hasCapability('stove_ignation') )
+			this.addCapability('stove_ignation');
+		if( null == await this.getCapabilityValue('stove_ignation')){
+			await this.setCapabilityValue('stove_ignation', true);
+		}
+		this.registerCapabilityListener('stove_ignation', this.onCapabilityLocked.bind(this));
+
+		if( !this.hasCapability('auto_mode') )
+			this.addCapability('auto_mode');
+		if( null == await this.getCapabilityValue('auto_mode')){
+			await this.setCapabilityValue('auto_mode', true);
+		}
+		this.registerCapabilityListener('auto_mode', this.onCapabilityAuto.bind(this));
+
+		if( this.hasCapability('locked') )
+			this.removeCapability('locked');			
+
+		this.setCapabilityValue('stove_connection', null)
 		//await this.setCapabilityValue('stove_state', this.stoveState);
 
 		//this.alarmePelletsChange = this.homey.flow.getDeviceTriggerCard('pellets_attention');
 		//this.alarmePelletsChange.register();
 		
-		let notification = this.homey.notifications.createNotification({excerpt:"L'Application a bien démarrée"});
-		this.timeoutId  = await this.registerIntervalRequest();
-		this.homey.on('unload', () => clearInterval(this.timeoutId));
-		this.log('Initialisation finalisée');
-	}
-
-	async registerIntervalRequest(){
-		this.log('Enregistrement de la mise a jour réguliere');
 		if( typeof this.stoveIp === 'undefined') return null;
 		else if( this.timeoutId != null ){
 			this.log('Suppression d une ancienne tache de maj');
@@ -72,11 +84,30 @@ class CBoxDevice extends Homey.Device {
 		try{
 			this.log('Test de la communication');
 			await this.checkComm();
-			await this.onTimeOut();
+			this.setCapabilityValue('stove_connection', true);
+			this.setAvailable();
 		}catch(error){
-			this.log('Erreur de communication');
+			this.setCapabilityValue('stove_connection', false);
+			this.setUnavailable();
+			let notificationErrorCom = this.homey.notifications.createNotification({excerpt:"Communication impossible avec le CBOX"});
 			return null;
 		}
+		try{
+			await this.onTimeOut();
+		}catch(error){
+			let notificationErrorCom = this.homey.notifications.createNotification({excerpt:"Mise a jour impossible des états du poele"});
+			return null;
+		}
+		this.timeoutId  = await this.registerIntervalRequest();
+		this.homey.on('unload', () => clearInterval(this.timeoutId));
+		this.log('Initialisation finalisée');
+		let notification = this.homey.notifications.createNotification({excerpt:"L'Application a bien démarrée"});
+
+	}
+
+	async registerIntervalRequest(){
+		this.log('Enregistrement de la mise a jour réguliere');
+		
 		this.log('Renvoie de la tache planifiée');
 		return this.homey.setInterval(async() => {
 			await this.onTimeOut();
@@ -89,19 +120,24 @@ class CBoxDevice extends Homey.Device {
 		this.tempSmartPause = settings.newSettings.pauseTemp;
 		this.useExtCaptor = settings.newSettings.externalTerm;
 		
+		if( settings.newSettings.deltaSilence >= settings.newSettings.deltaN1)
+			throw new Error('Temp. Silence must be lower than Temp. N1');
+
 		if( settings.newSettings.deltaN1 >= settings.newSettings.deltaN2)
 			throw new Error('Temp. N1 must be lower than Temp. N2');
 		
-		/*if( settings.newSettings.deltaN2 >= settings.newSettings.deltaSilence)
-			throw new Error('Temp. N2 must be lower than Temp. Silence');*/
-		if( settings.newSettings.deltaSilence >= settings.newSettings.deltaN1)
-			throw new Error('Temp. Silence must be lower than Temp. N1');
+		//if( settings.newSettings.deltaN2 >= settings.newSettings.deltaSilence)
+		//	throw new Error('Temp. N2 must be lower than Temp. Silence');
 
 		if( settings.oldSettings.ip != settings.newSettings.ip ){
 			this.stoveIp = settings.newSettings.ip;
 			try{
 				await this.checkComm();
+				this.setCapabilityValue('stove_connection', true);
+				this.setAvailable();
 			}catch(error){
+				this.setCapabilityValue('stove_connection', false);
+				this.setUnavailable();
 				throw new Error("ERROR_COMM_ERROR");
 			}
 			this.registerIntervalRequest();
@@ -137,10 +173,18 @@ class CBoxDevice extends Homey.Device {
 			let data = await this.sendHTTPRequest(url);
 			this.stoveState = await this.updateStates(data.STATUS);
 			await this.updateAllStates(data);
-			this.checkStateAndRegulationMode();
+			//this.checkStateAndRegulationMode();
 			this.log("MAJ Terminée");
+			if( await this.getCapabilityValue('stove_connection') == false){
+				this.setCapabilityValue('stove_connection', true);
+				this.setAvailable();
+			}
 		}catch(error){
 			this.log('Erreur de communication avec la CBox: ', error);
+			if( await this.getCapabilityValue('stove_connection') == true){
+				this.setCapabilityValue('stove_connection', false);
+				this.setUnavailable();
+			}
 		}
 	}
 	
@@ -303,8 +347,8 @@ class CBoxDevice extends Homey.Device {
 
 		let targetPreset = 0;
 
-		if( (temp < targetTemp) && ((temp+1) >= targetTemp) ){
-			targetPreset = 1;// on se laisse un petit delta pour eviter de sur consommer
+		if( (temp < targetTemp) && ((temp+0.5) >= targetTemp) ){
+			targetPreset = 3;// on force le silence quand on approche de la temperature cible avec un delta.
 		}else if(temp < targetTemp){// on est vriment trop loin de la temp de consigne
 			targetPreset = 0;//after that currentDelta is >= 0
 		}else if(currentDelta >= deltaN1 && currentDelta < deltaN2 ){
@@ -318,7 +362,7 @@ class CBoxDevice extends Homey.Device {
 		}else{
 			targetPreset = 0;
 		}
-
+		this.log('Application du preset='+targetPreset);
 		this.setPreset(targetPreset);
 
 
@@ -349,10 +393,15 @@ class CBoxDevice extends Homey.Device {
 		}
 	}
 
+	async setIgnationAllowed(allowed){
+		await this.setCapabilityValue('stove_ignation',allowed);
+	}
+
 	async onTempChange(){
+		if( ! await this.getCapabilityValue('auto_mode')) return;
 		this.log('Sur Changement de température');
 		let regulationMode = this.regulationMode;
-		this.log("Mode de regulation acctuel="+regulationMode);
+		this.log("Mode de regulation actuel="+regulationMode);
 		if( REGULATION_ENUM.WAITING_TEMP == regulationMode || REGULATION_ENUM.PAUSED == regulationMode ){
 			let canStartWithSSsettings = await this.isCanStartWSStartKnonwTemp();
 			if( canStartWithSSsettings ){
@@ -383,7 +432,7 @@ class CBoxDevice extends Homey.Device {
 	}
 
 	async isCanStartWSStartKnonwTemp(){
-		let startLocked = await this.getCapabilityValue('locked');
+		let startLocked = !await this.getCapabilityValue('stove_ignation');
 		if( true == startLocked ){
 			this.log('Demarrage bloqué');	
 			return false;
@@ -430,6 +479,15 @@ class CBoxDevice extends Homey.Device {
 	async isSmartStartEnabled(){
 		return this.smartStartEnbale;
 	}
+	
+	async isSmartPauseEnabled(){
+		return this.smartPauseEnable;
+	}
+
+	async isIgnationAllowed(){
+		return await this.getCapabilityValue('stove_ignation');
+	}
+
 
 	/*------ CAPABILITIES LISTENER ----------*/
 	async onCapabilityOnOff(value, opts){
@@ -451,7 +509,7 @@ class CBoxDevice extends Homey.Device {
 			throw new Error(this.homey.__('illegalStateOnOff'));
 		}
 		try{
-			let startLocked = await this.getCapabilityValue('locked');
+			let startLocked = ! await this.getCapabilityValue('stove_ignation');
 			if(value && startLocked ){
 				throw new Error(this.homey.__('illegalStateOnOff'));
 			}else if( value ){
@@ -507,6 +565,8 @@ class CBoxDevice extends Homey.Device {
 	}
 	
 	async onCapabilityTargetPower(value, opts){
+		if( await this.getCapabilityValue('auto_mode'))
+			throw new Error("AUTO_MODE_ENABLED");
 		let url = this.getcallCboxURL("POWR", true, value);
 		try{
 			await this.sendHTTPRequest(url);
@@ -518,6 +578,8 @@ class CBoxDevice extends Homey.Device {
 	}
 	
 	async onCapabilityTargetFanSpeed(value, opts){
+		if( await this.getCapabilityValue('auto_mode'))
+			throw new Error("AUTO_MODE_ENABLED");
 		let url = this.getcallCboxURL("RFAN", true, value);
 		try{
 			await this.sendHTTPRequest(url);
@@ -530,7 +592,7 @@ class CBoxDevice extends Homey.Device {
 	async onCapabilityRegulationMode(value, opts){
 		let isOn = await this.getCapabilityValue('onoff');
 		let stoveState = await this.getCapabilityValue('stove_state');
-		let startLocked = await this.getCapabilityValue('locked');
+		let startLocked = ! await this.getCapabilityValue('stove_ignation');
 
 		//if( !isOn && value == "STOPPED" ) throw new Error(this.homey.__('illegalRegulationMode'));
 		if( isOn && value == REGULATION_ENUM.STOPPED && (stoveState == STOVE_STATE.STOPPED || stoveState == STOVE_STATE.STOPPING) ){
@@ -568,7 +630,15 @@ class CBoxDevice extends Homey.Device {
 	}
 
 	async onCapabilityLocked(value, opts){
-		this.setCapabilityValue('locked', value);
+		this.setCapabilityValue('stove_ignation', value);
+	}
+
+
+
+	async onCapabilityAuto(value, opts){
+		await this.setCapabilityValue('auto_mode', value);
+		if( value )
+			this.onTempChange();
 	}
 	
 	/*---------- COMMUNICATION AVEC LA CBOX --------*/
